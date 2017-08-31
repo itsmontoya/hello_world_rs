@@ -1,0 +1,9 @@
+[package]
+name = "hello_world"
+version = "0.1.0"
+authors = ["itsMontoya <josh@montoya.io>"]
+
+[dependencies]
+hyper = "0.11.2"
+tokio-timer = "0.1"
+futures-await = { git = "https://github.com/alexcrichton/futures-await" }

@@ -48,11 +48,6 @@ impl Service for Hello {
 
 #[async]
 fn fooResp() -> Result<String, i32> {
-    // We'll create a set to add a bunch of recievers to.
-    //  let mut rx_set = Vec::new();
-    //rx_set.push(greeting())
-    //rx_set.push(name())
-
     let mut rx_set = Vec::new();
     rx_set.push(greeting());
     rx_set.push(greeting());

@@ -12,7 +12,10 @@ use futures::future::FutureResult;
 use hyper::header::{ContentLength, ContentType};
 use hyper::server::{Http, Service, Request, Response};
 
-static PHRASE: &'static [u8] = b"Hello World!";
+static __SPACE: &'static [u8] = b" ";
+static __GREETING: &'static [u8] = b"Hello";
+static __NAME: &'static [u8] = b"World";
+static __PUNCTUATION: &'static [u8] = b"!";
 
 fn main() {
     pretty_env_logger::init().unwrap();
@@ -30,29 +33,55 @@ impl Service for Hello {
     type Response = Response;
     type Error = hyper::Error;
     type Future = FutureResult<Response, hyper::Error>;
-    
+
     fn call(&self, _req: Request) -> Self::Future {
-        // Get long request value
-        // I know I'm doing it wrong here, because this makes it synchonrous.
-        // If I make 3 requests, it will take 9 seconds to serve all instead of 3
-        let val = foo().wait().unwrap();
+        let val = fooResp();
         // Create response from value
         let resp = Response::new()
             .with_header(ContentLength(val.len() as u64))
             .with_header(ContentType::plaintext())
             .with_body(val);
-
         // Return an OK future with the response
         futures::future::ok(resp)
     }
 }
 
 #[async]
-fn foo() -> Result<&'static [u8], i32> {
+fn fooResp() -> Result<String, i32> {
+    // We'll create a set to add a bunch of recievers to.
+    //  let mut rx_set = Vec::new();
+    //rx_set.push(greeting())
+    //rx_set.push(name())
+
+    let mut rx_set = Vec::new();
+    rx_set.push(greeting());
+    rx_set.push(greeting());
+    rx_set.push(greeting());
+
+    let result = await!(futures::future::join_all(rx_set)).unwrap();
+    let val = result[0] + result[1] + result[2];
+    Ok(val.to_string())
+}
+
+type DBResult = Result<i32, i32>;
+
+#[async]
+fn greeting() -> DBResult {
     let timer = Timer::default();
     // Set a timeout that expires in 500 milliseconds
     let sleep = timer.sleep(Duration::from_millis(3000));
 
     await!(sleep);
-    Ok(PHRASE)
+    Ok(1)
+}
+
+
+#[async]
+fn name() -> DBResult {
+    let timer = Timer::default();
+    // Set a timeout that expires in 500 milliseconds
+    let sleep = timer.sleep(Duration::from_millis(3000));
+
+    await!(sleep);
+    Ok(2)
 }

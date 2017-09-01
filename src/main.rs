@@ -18,6 +18,10 @@ fn main() {
 
 const PHRASE: &'static str = "Hello, World!";
 
+// The future representing the eventual Response your call will
+// resolve to. This can change to whatever Future you need.
+type Future = futures::future::FutureResult<Response, hyper::Error>;
+
 struct HelloWorld;
 
 impl Service for HelloWorld {
@@ -25,26 +29,27 @@ impl Service for HelloWorld {
     type Request = Request;
     type Response = Response;
     type Error = hyper::Error;
-    // The future representing the eventual Response your call will
-    // resolve to. This can change to whatever Future you need.
-    type Future = futures::future::FutureResult<Self::Response, Self::Error>;
 
-    #[async]
-    fn call(&self, _req: Request) -> Self::Future {
-        println!("Hello world!");
-        let timer = Timer::default();
-
-        // Pretend the request takes 500ms
-        let sleep = timer.sleep(Duration::from_millis(3000));
-        sleep.wait();
-
-        println!("Sending!");
-
-        // We're currently ignoring the Request
-        // And returning an 'ok' Future, which means it's ready
-        // immediately, and build a Response with the 'PHRASE' body.
-        futures::future::ok(Response::new()
-            .with_header(ContentLength(PHRASE.len() as u64))
-            .with_body(PHRASE))
+    fn call(&self, _req: Request) -> Future {
+        request(_req);
     }
+}
+
+
+#[async]
+fn request(_req: Request) -> Future {
+    println!("Hello world!");
+    let timer = Timer::default();
+
+    // Pretend the request takes 500ms
+    let sleep = timer.sleep(Duration::from_millis(3000));
+    sleep.wait();
+    println!("Sending!");
+
+    // We're currently ignoring the Request
+    // And returning an 'ok' Future, which means it's ready
+    // immediately, and build a Response with the 'PHRASE' body.
+    futures::future::ok(Response::new()
+        .with_header(ContentLength(PHRASE.len() as u64))
+        .with_body(PHRASE))
 }

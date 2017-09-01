@@ -35,27 +35,27 @@ impl Service for Hello {
     type Future = FutureResult<Response, hyper::Error>;
 
     fn call(&self, _req: Request) -> Self::Future {
-        let val = fooResp();
-        // Create response from value
-        let resp = Response::new()
-            .with_header(ContentLength(val.len() as u64))
-            .with_header(ContentType::plaintext())
-            .with_body(val);
-        // Return an OK future with the response
-        futures::future::ok(resp)
+        fooResp()
     }
 }
 
 #[async]
-fn fooResp() -> Result<String, i32> {
+fn fooResp() -> Result<Response, i32> {
     let mut rx_set = Vec::new();
     rx_set.push(greeting());
     rx_set.push(greeting());
     rx_set.push(greeting());
 
     let result = await!(futures::future::join_all(rx_set)).unwrap();
-    let val = result[0] + result[1] + result[2];
-    Ok(val.to_string())
+    let val = (result[0] + result[1] + result[2]).to_string();
+
+    // Create response from value
+    let resp = Response::new()
+        .with_header(ContentLength(val.len() as u64))
+        .with_header(ContentType::plaintext())
+        .with_body(val);
+
+    Ok(resp)
 }
 
 type DBResult = Result<i32, i32>;

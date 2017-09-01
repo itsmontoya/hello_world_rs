@@ -6,4 +6,5 @@ authors = ["itsMontoya <josh@montoya.io>"]
 [dependencies]
 hyper = "0.11.2"
 tokio-timer = "0.1"
+pretty_env_logger = "0.1.1"
 futures-await = { git = "https://github.com/alexcrichton/futures-await" }

@@ -1,55 +1,58 @@
 #![feature(proc_macro, conservative_impl_trait, generators)]
 
 extern crate hyper;
+extern crate pretty_env_logger;
 extern crate futures_await as futures;
 extern crate tokio_timer;
 
-use hyper::header::ContentLength;
-use hyper::server::{Http, Request, Response, Service};
-use futures::prelude::*;
-use std::time::*;
 use tokio_timer::*;
+use std::time::*;
+use futures::prelude::*;
+use futures::future::FutureResult;
+use hyper::header::{ContentLength, ContentType};
+use hyper::server::{Http, Service, Request, Response};
+
+static PHRASE: &'static [u8] = b"Hello World!";
 
 fn main() {
+    pretty_env_logger::init().unwrap();
     let addr = "127.0.0.1:3000".parse().unwrap();
-    let server = Http::new().bind(&addr, || Ok(HelloWorld)).unwrap();
+    let server = Http::new().bind(&addr, || Ok(Hello)).unwrap();
+    println!("Listening on http://{} with 1 thread.",
+             server.local_addr().unwrap());
     server.run().unwrap();
 }
 
-const PHRASE: &'static str = "Hello, World!";
+struct Hello;
 
-// The future representing the eventual Response your call will
-// resolve to. This can change to whatever Future you need.
-type Future = futures::future::FutureResult<Response, hyper::Error>;
-
-struct HelloWorld;
-
-impl Service for HelloWorld {
-    // boilerplate hooking up hyper's server types
+impl Service for Hello {
     type Request = Request;
     type Response = Response;
     type Error = hyper::Error;
+    type Future = FutureResult<Response, hyper::Error>;
+    
+    fn call(&self, _req: Request) -> Self::Future {
+        // Get long request value
+        // I know I'm doing it wrong here, because this makes it synchonrous.
+        // If I make 3 requests, it will take 9 seconds to serve all instead of 3
+        let val = foo().wait().unwrap();
+        // Create response from value
+        let resp = Response::new()
+            .with_header(ContentLength(val.len() as u64))
+            .with_header(ContentType::plaintext())
+            .with_body(val);
 
-    fn call(&self, _req: Request) -> Future {
-        request(_req);
+        // Return an OK future with the response
+        futures::future::ok(resp)
     }
 }
 
-
 #[async]
-fn request(_req: Request) -> Future {
-    println!("Hello world!");
+fn foo() -> Result<&'static [u8], i32> {
     let timer = Timer::default();
-
-    // Pretend the request takes 500ms
+    // Set a timeout that expires in 500 milliseconds
     let sleep = timer.sleep(Duration::from_millis(3000));
-    sleep.wait();
-    println!("Sending!");
 
-    // We're currently ignoring the Request
-    // And returning an 'ok' Future, which means it's ready
-    // immediately, and build a Response with the 'PHRASE' body.
-    futures::future::ok(Response::new()
-        .with_header(ContentLength(PHRASE.len() as u64))
-        .with_body(PHRASE))
+    await!(sleep);
+    Ok(PHRASE)
 }

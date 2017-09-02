@@ -32,15 +32,16 @@ impl Service for Hello {
     type Request = Request;
     type Response = Response;
     type Error = hyper::Error;
-    type Future = FutureResult<Response, hyper::Error>;
+//    type Future = FutureResult<Response, hyper::Error>;
+    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, _req: Request) -> Self::Future {
-        fooResp()
+        Box::new(fooResp())
     }
 }
 
 #[async]
-fn fooResp() -> Result<Response, i32> {
+fn fooResp() -> Result<Response, hyper::Error> {
     let mut rx_set = Vec::new();
     rx_set.push(greeting());
     rx_set.push(greeting());
